@@ -28,6 +28,8 @@ async def create_project(project: Project):
     try:
         logger.info(f"Received project data: {project.dict()}")
         project_dict = project.dict()
+        # Force status to 'todo' regardless of input
+        project_dict["status"] = "todo"
         # Convert date to ISO format string
         project_dict["dueDate"] = project_dict["dueDate"].isoformat()
         
@@ -106,4 +108,15 @@ async def delete_project(id: str):
         raise HTTPException(status_code=404, detail="Project not found")
     except Exception as e:
         logger.error(f"Error deleting project {id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# PATCH /projects/set_all_status_todo - Set status of all projects to 'todo'
+@router.patch("/projects/set_all_status_todo")
+async def set_all_projects_status_todo():
+    try:
+        update_result = await project_collection.update_many({}, {"$set": {"status": "todo"}})
+        logger.info(f"Updated {update_result.modified_count} projects to status 'todo'")
+        return {"message": f"Updated {update_result.modified_count} projects to status 'todo'"}
+    except Exception as e:
+        logger.error(f"Error updating all projects' status: {e}")
         raise HTTPException(status_code=500, detail=str(e)) 
